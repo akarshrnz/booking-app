@@ -352,7 +352,7 @@ class _BranchDetailPageState extends State<BranchDetailPage> {
                   style: AppTextStyles.cardSubText.copyWith(fontSize: 12.sp),
                 ),
                 Text(
-                  '\$${branch.pricePerHour.toStringAsFixed(2)} / hour',
+                  '\₹20 / hour',
                   style: AppTextStyles.cardTitle.copyWith(
                     fontSize: 16.sp,
                     color: gradientOne,

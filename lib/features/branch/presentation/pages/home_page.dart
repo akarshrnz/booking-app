@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,59 +29,51 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final FocusNode _searchFocusNode = FocusNode();
-  final FocusNode temp = FocusNode();
+  final FocusNode _tempFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
+    // Initialize branches and notifications after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BranchBloc>().add(GetAllBranches());
-      initNotification();
-      requestNotificationPermission();
+      _initNotifications();
+      _requestNotificationPermission();
     });
   }
 
   @override
   void dispose() {
     _searchFocusNode.dispose();
+    _tempFocusNode.dispose();
     super.dispose();
   }
 
-  void initNotification() {
+  /// Initializes notifications for current user
+  void _initNotifications() {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       context.read<NotificationBloc>().add(StartListeningNotifications(user.uid));
     }
   }
 
-  Future<void> requestNotificationPermission() async {
+  /// Request notification permission if denied
+  Future<void> _requestNotificationPermission() async {
     if (await Permission.notification.isDenied) {
       await Permission.notification.request();
     }
   }
 
-  Future<void> addLocationFieldsToBranch(String docId) async {
-    try {
-      await FirebaseFirestore.instance.collection('branch').doc(docId).update({
-        'latitude': 12.9716,
-        'longitude': 77.5946,
-        'address': 'Bengaluru, Karnataka, India',
-      });
-      print('Fields added successfully');
-    } catch (e) {
-      print('Error adding fields: $e');
-    }
-  }
+ 
 
+  /// Navigate to branch detail screen and focus a temporary focus node after returning
   void _navigateToDetailAndFocusSearch(String branchId) {
     Navigator.pushNamed(
       context,
       AppConstants.branchDetailRoute,
       arguments: branchId,
     ).then((_) {
-          FocusScope.of(context).requestFocus(temp);
-
-      //_searchFocusNode.requestFocus();
+      FocusScope.of(context).requestFocus(_tempFocusNode);
     });
   }
 
@@ -102,6 +93,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the custom AppBar with location selector and notification icon
   AppBar _buildAppBar() {
     return AppBar(
       surfaceTintColor: Colors.transparent,
@@ -109,9 +101,7 @@ class _HomePageState extends State<HomePage> {
       elevation: 0,
       titleSpacing: 0,
       leading: GestureDetector(
-        onTap: () {
-          _scaffoldKey.currentState?.openDrawer();
-        },
+        onTap: () => _scaffoldKey.currentState?.openDrawer(),
         child: Container(
           margin: EdgeInsets.only(left: 14.w, top: 5, bottom: 5),
           padding: EdgeInsets.all(10.w),
@@ -178,18 +168,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the search bar at the top
   Widget _buildSearchField() {
     return Padding(
-      padding: EdgeInsets.only(left: 16.w, top: 12.h,bottom: 12.h),
+      padding: EdgeInsets.only(left: 16.w, top: 12.h, bottom: 12.h),
       child: SearchFilterBar(focusnode: _searchFocusNode),
     );
   }
 
+  /// Builds the branch list using BlocBuilder
   Widget _buildBranchList() {
     return BlocBuilder<BranchBloc, BranchState>(
       builder: (context, state) {
         if (state is BranchInitial || state is BranchLoading) {
-          return  Center(child: DotLoader(color: primaryColor,size: 30,));
+          return Center(child: DotLoader(color: primaryColor, size: 30));
         } else if (state is BranchError) {
           return Center(child: Text(state.message));
         } else if (state is BranchLoaded) {
@@ -208,101 +200,101 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  _buildBranchCard(Branch branch, int index) {
-  final imageUrl =
-      (branch.imageUrls != null && branch.imageUrls!.isNotEmpty)
-          ? branch.imageUrls!.first
-          : null;
+  /// Builds a single branch card with image, details, rating, and offer
+  Widget _buildBranchCard(Branch branch, int index) {
+    final imageUrl =
+        (branch.imageUrls != null && branch.imageUrls!.isNotEmpty)
+            ? branch.imageUrls!.first
+            : null;
 
-  return GestureDetector(
-    onTap: () => _navigateToDetailAndFocusSearch(branch.id),
-    child: Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: cardBackground,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12.r),
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl ?? '',
-                  width: 88.w,
-                  height: 110.h,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image, color: Colors.grey),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
+    return GestureDetector(
+      onTap: () => _navigateToDetailAndFocusSearch(branch.id),
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16.h),
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: cardBackground,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl ?? '',
+                    width: 88.w,
+                    height: 110.h,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image, color: Colors.grey),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildBranchTitleAndFav(branch,index),
-                    SizedBox(height: 4.h),
-                    if (branch.address != null && branch.address!.isNotEmpty)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 16,
-                            color: Colors.redAccent,
-                          ),
-                          SizedBox(width: 4.w),
-                          Expanded(
-                            child: Text(
-                              branch.address!,
-                              style: AppTextStyles.cardSubText,
-                              overflow: TextOverflow.ellipsis,
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildBranchTitleAndFav(branch, index),
+                      SizedBox(height: 4.h),
+                      if (branch.address != null && branch.address!.isNotEmpty)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              size: 16,
+                              color: Colors.redAccent,
                             ),
-                          ),
-                        ],
-                      ),
-                    if (branch.city != null && branch.city!.isNotEmpty)
-                      Padding(
-                        padding: EdgeInsets.only(top: 4.h),
-                        child: Text(
-                          branch.description!,
-                          style: AppTextStyles.cardSubText,
+                            SizedBox(width: 4.w),
+                            Expanded(
+                              child: Text(
+                                branch.address!,
+                                style: AppTextStyles.cardSubText,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    SizedBox(height: 6.h),
-                    _buildRatingAndDistance(),
-                  ],
+                      if (branch.city != null && branch.city!.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(top: 4.h),
+                          child: Text(
+                            branch.description!,
+                            style: AppTextStyles.cardSubText,
+                          ),
+                        ),
+                      SizedBox(height: 6.h),
+                      _buildRatingAndDistance(),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          _buildOfferSection(index),
-        ],
+              ],
+            ),
+            SizedBox(height: 8.h),
+            _buildOfferSection(index),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-
-
-  Widget _buildBranchTitleAndFav(dynamic branch,int index) {
+  /// Builds the branch title and favorite icon
+  Widget _buildBranchTitleAndFav(Branch branch, int index) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -314,27 +306,12 @@ class _HomePageState extends State<HomePage> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-         Icon(index%2==0?Icons.favorite: Icons.favorite_outline, color: chipSelected),
+        Icon(index % 2 == 0 ? Icons.favorite : Icons.favorite_outline, color: chipSelected),
       ],
     );
   }
 
-  Widget _buildBranchAddress(dynamic branch) {
-    return Row(
-      children: [
-        Image.asset(AppImage.shop, width: 14.w, height: 14.h),
-        SizedBox(width: 4.w),
-        Expanded(
-          child: Text(
-            branch.location ?? '',
-            style: AppTextStyles.cardSubText,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
+  /// Builds rating and distance row for branch
   Widget _buildRatingAndDistance() {
     return Row(
       children: [
@@ -349,6 +326,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the offer section for branch
   Widget _buildOfferSection(int index) {
     final offers = [
       'Unlock Productivity – Get Flat 10% Off Today!',

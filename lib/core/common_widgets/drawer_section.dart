@@ -62,7 +62,7 @@ class CustomDrawer extends StatelessWidget {
                       const CircleAvatar(
                         radius: 24,
                         backgroundColor: Colors.white,
-                        child: Icon(Icons.person, color: Colors.black),
+                        child: Icon(Icons.person_3_outlined, color: Colors.black),
                       ),
                       const SizedBox(width: 12),
                       Column(

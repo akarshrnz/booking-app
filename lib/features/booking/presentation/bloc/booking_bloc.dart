@@ -57,18 +57,43 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
     );
   }
 
-  Future<void> _onGetUserBookings(
-    GetUserBookingsEvent event,
-    Emitter<BookingState> emit,
-  ) async {
-    emit(BookingLoading());
-    final userId = auth.currentUser?.uid ?? '';
-    final result = await getUserBookings(userId);
-    result.fold(
-      (failure) => emit(BookingError(message: _mapFailureToMessage(failure))),
-      (bookings) => emit(BookingsLoaded(bookings: bookings)),
-    );
-  }
+ Future<void> _onGetUserBookings(
+  GetUserBookingsEvent event,
+  Emitter<BookingState> emit,
+) async {
+  emit(BookingLoading());
+  final userId = auth.currentUser?.uid ?? '';
+  final result = await getUserBookings(userId);
+
+  result.fold(
+    (failure) => emit(BookingError(message: _mapFailureToMessage(failure))),
+    (bookings) {
+      // Sort bookings: Upcoming first (nearest date first), then Completed
+      bookings.sort((a, b) {
+        final now = DateTime.now();
+        final aUpcoming = a.date.isAfter(now);
+        final bUpcoming = b.date.isAfter(now);
+
+        if (aUpcoming && bUpcoming) {
+      
+          return a.date.compareTo(b.date);
+        } else if (aUpcoming && !bUpcoming) {
+         
+          return -1;
+        } else if (!aUpcoming && bUpcoming) {
+         
+          return 1;
+        } else {
+       
+          return b.date.compareTo(a.date);
+        }
+      });
+
+      emit(BookingsLoaded(bookings: bookings));
+    },
+  );
+}
+
 
   String _mapFailureToMessage(Failure failure) {
     if (failure is ServerFailure) {

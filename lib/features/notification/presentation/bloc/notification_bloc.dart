@@ -22,10 +22,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       await emit.forEach(
         getNotifications(event.userId),
         onData: (notifications) {
-          // if (notifications.isNotEmpty) {
-          //   final latest = notifications.first;
-          //   localNotificationService.show(latest.title, latest.body);
-          // }
+       
           return NotificationLoaded(notifications);
         },
         onError: (_, __) => NotificationError(),
@@ -35,13 +32,14 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<AddNotification>((event, emit) async {
         final NotificationService notificationService = NotificationService();
         print("notification called 1-------------");
+         sendNotification(event.notification, event.userId);
 
       if (event.notification.title.isNotEmpty) {
         print("notification called -------------");
         final latest=event.notification;
             notificationService.showNotification(title:  latest.title,body:  latest.body,);
           }
-    await sendNotification(event.notification, event.userId);
+    
     });
   }
 }
