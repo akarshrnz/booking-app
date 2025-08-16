@@ -6,14 +6,28 @@ A modern, responsive mobile application for booking co-working spaces, built wit
 
 ## Features
 
-- Browse and search co-working spaces.
-- View branch details, including location and amenities.
-- Book a workspace for a specific date and time.
-- View and manage your bookings.
-- Receive push notifications for booking updates.
-- Interactive map to locate branches using **OpenStreetMap**.
-- Responsive UI for multiple device sizes.
-- Real-time updates using **Firebase Firestore**.
+- Splash Screen – Show logo and navigate to Home.
+- Login and Register – User authentication flow.
+- Home Screen – List coworking branches with name, location, price/hour, search (by asset name, city, or branch), filter (by city or price).
+- Map View – Show all branches as markers dynamically.
+- Space Detail Screen – Images, description, amenities, operating hours.
+- Booking Screen – Date/time slot selection, booking confirmation.
+- My Bookings Screen – Show user bookings with status (Upcoming / Completed).
+- Notifications Screen – Show booking-related push notifications.
+
+
+---
+
+## Challenges Faced
+
+**OpenStreetMap Integration:**  
+We used OpenStreetMap instead of Google Maps due to billing and usage cost concerns with Google Maps.
+
+**Map Styling & Features:**  
+Implementing custom markers, user location tracking, and interactive features required additional configuration compared to Google Maps.
+
+**Cross-Platform Consistency:**  
+Ensuring maps worked consistently on both Android and iOS devices required extra testing and fine-tuning.
 
 ---
 
@@ -54,5 +68,3 @@ The app sends push notifications to users whenever a booking is created, using *
 1. Enable **Cloud Messaging** in your Firebase project.
 2. Ensure `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) are configured.
 3. Add dependencies in `pubspec.yaml`:
-
-
