@@ -8,6 +8,7 @@ import 'package:innerspace_booking_app/core/app_constants.dart';
 import 'package:innerspace_booking_app/core/app_image.dart';
 import 'package:innerspace_booking_app/core/app_text_styles.dart';
 import 'package:innerspace_booking_app/core/color_constant.dart';
+import 'package:innerspace_booking_app/features/auth/presentation/pages/widgets/dot_loader.dart';
 import 'package:innerspace_booking_app/features/branch/domain/entities/branch.dart';
 import 'package:innerspace_booking_app/features/branch/presentation/bloc/branch_bloc.dart';
 import 'package:innerspace_booking_app/core/common_widgets/drawer_section.dart';
@@ -188,7 +189,7 @@ class _HomePageState extends State<HomePage> {
     return BlocBuilder<BranchBloc, BranchState>(
       builder: (context, state) {
         if (state is BranchInitial || state is BranchLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return  Center(child: DotLoader(color: primaryColor,));
         } else if (state is BranchError) {
           return Center(child: Text(state.message));
         } else if (state is BranchLoaded) {
