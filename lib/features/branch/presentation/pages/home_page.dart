@@ -189,7 +189,7 @@ class _HomePageState extends State<HomePage> {
     return BlocBuilder<BranchBloc, BranchState>(
       builder: (context, state) {
         if (state is BranchInitial || state is BranchLoading) {
-          return  Center(child: DotLoader(color: primaryColor,));
+          return  Center(child: DotLoader(color: primaryColor,size: 30,));
         } else if (state is BranchError) {
           return Center(child: Text(state.message));
         } else if (state is BranchLoaded) {
