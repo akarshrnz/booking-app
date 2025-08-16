@@ -9,6 +9,7 @@ import '../bloc/notification_bloc.dart';
 import '../bloc/notification_event.dart';
 import '../bloc/notification_state.dart';
 
+/// Page to display user notifications
 class NotificationListPage extends StatefulWidget {
   const NotificationListPage({super.key});
 
@@ -19,6 +20,7 @@ class NotificationListPage extends StatefulWidget {
 class _NotificationListPageState extends State<NotificationListPage> {
   final _scrollController = ScrollController();
 
+  /// Text styles for notifications
   TextStyle get _notificationTitle => TextStyle(
         fontSize: 16.sp,
         fontWeight: FontWeight.w700,
@@ -41,15 +43,15 @@ class _NotificationListPageState extends State<NotificationListPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => initNotification());
+    // Start listening to notifications after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initNotifications());
   }
 
-  void initNotification() {
+  /// Initialize notifications for the current user
+  void _initNotifications() {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      context
-          .read<NotificationBloc>()
-          .add(StartListeningNotifications(user.uid));
+      context.read<NotificationBloc>().add(StartListeningNotifications(user.uid));
     }
   }
 
@@ -63,63 +65,74 @@ class _NotificationListPageState extends State<NotificationListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        elevation: 0.5,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        title: Text(
-          'Notifications',
-          style: TextStyle(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.w800,
-            color: textColor,
-            letterSpacing: -0.5,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.w),
-          onPressed: () => Navigator.pop(context),
-        ),
-        shadowColor: Colors.black.withOpacity(0.1),
-      ),
+      appBar: _buildAppBar(),
       body: BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
           if (state is NotificationLoading) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: primaryColor,
-                strokeWidth: 2.5,
-              ).animate().scale(duration: 300.ms),
-            );
+            return _buildLoadingState();
           } else if (state is NotificationLoaded) {
-            if (state.notifications.isEmpty) {
-              return _buildEmptyState();
-            }
-            return RefreshIndicator(
-              color: primaryColor,
-              onRefresh: () async => initNotification(),
-              child: ListView.separated(
-                controller: _scrollController,
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: state.notifications.length,
-                separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                itemBuilder: (context, index) {
-                  return _buildNotificationCard(
-                      state.notifications[index], index);
-                },
-              ),
-            );
+            if (state.notifications.isEmpty) return _buildEmptyState();
+            return _buildNotificationList(state.notifications);
           }
-          return const SizedBox();
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 
-  Widget _buildNotificationCard(notification, int index) {
-    bool isUnread = true; // Replace with your unread logic
+  /// AppBar for the notification screen
+  AppBar _buildAppBar() {
+    return AppBar(
+      elevation: 0.5,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      centerTitle: true,
+      title: Text(
+        'Notifications',
+        style: TextStyle(
+          fontSize: 20.sp,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+          letterSpacing: -0.5,
+        ),
+      ),
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.w),
+        onPressed: () => Navigator.pop(context),
+      ),
+      shadowColor: Colors.black.withOpacity(0.1),
+    );
+  }
+
+  /// Loading indicator while fetching notifications
+  Widget _buildLoadingState() {
+    return Center(
+      child: CircularProgressIndicator(
+        color: primaryColor,
+        strokeWidth: 2.5,
+      ).animate().scale(duration: 300.ms),
+    );
+  }
+
+  /// ListView for notifications
+  Widget _buildNotificationList(List notifications) {
+    return RefreshIndicator(
+      color: primaryColor,
+      onRefresh: () async => _initNotifications(),
+      child: ListView.separated(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: notifications.length,
+        separatorBuilder: (_, __) => SizedBox(height: 8.h),
+        itemBuilder: (context, index) => _buildNotificationCard(notifications[index], index),
+      ),
+    );
+  }
+
+  /// Individual notification card
+  Widget _buildNotificationCard(dynamic notification, int index) {
+    bool isUnread = true; // TODO: Replace with actual unread logic
 
     return Animate(
       effects: [
@@ -155,7 +168,6 @@ class _NotificationListPageState extends State<NotificationListPage> {
             highlightColor: primaryColor.withOpacity(0.05),
             child: Stack(
               children: [
-                // Unread indicator
                 if (isUnread)
                   Positioned(
                     left: 0,
@@ -177,78 +189,9 @@ class _NotificationListPageState extends State<NotificationListPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 48.w,
-                        height: 48.w,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              primaryColor.withOpacity(0.2),
-                              primaryColor.withOpacity(0.1),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.notifications_active_rounded,
-                          color: primaryColor,
-                          size: 24.w,
-                        ),
-                      ),
+                      _buildNotificationIcon(),
                       SizedBox(width: 16.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    notification.title,
-                                    style: _notificationTitle,
-                                  ),
-                                ),
-                                if (isUnread)
-                                  Container(
-                                    width: 8.w,
-                                    height: 8.w,
-                                    margin: EdgeInsets.only(left: 8.w, top: 4.w),
-                                    decoration: BoxDecoration(
-                                      color: primaryColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            SizedBox(height: 6.h),
-                            Text(
-                              notification.body,
-                              style: _notificationBody,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            SizedBox(height: 12.h),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 14.w,
-                                  color: secondaryTextColor.withOpacity(0.5),
-                                ),
-                                SizedBox(width: 6.w),
-                                Text(
-                                  DateFormat('MMM d, h:mm a')
-                                      .format(notification.timestamp.toLocal()),
-                                  style: _notificationTime,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                      Expanded(child: _buildNotificationContent(notification, isUnread)),
                     ],
                   ),
                 ),
@@ -260,6 +203,64 @@ class _NotificationListPageState extends State<NotificationListPage> {
     );
   }
 
+  /// Notification icon with gradient background
+  Widget _buildNotificationIcon() {
+    return Container(
+      width: 48.w,
+      height: 48.w,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryColor.withOpacity(0.2), primaryColor.withOpacity(0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.notifications_active_rounded, color: primaryColor, size: 24.w),
+    );
+  }
+
+  /// Notification content with title, body, and timestamp
+  Widget _buildNotificationContent(dynamic notification, bool isUnread) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Text(notification.title, style: _notificationTitle)),
+            if (isUnread)
+              Container(
+                width: 8.w,
+                height: 8.w,
+                margin: EdgeInsets.only(left: 8.w, top: 4.w),
+                decoration: BoxDecoration(color: primaryColor, shape: BoxShape.circle),
+              ),
+          ],
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          notification.body,
+          style: _notificationBody,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        SizedBox(height: 12.h),
+        Row(
+          children: [
+            Icon(Icons.access_time_rounded, size: 14.w, color: secondaryTextColor.withOpacity(0.5)),
+            SizedBox(width: 6.w),
+            Text(
+              DateFormat('MMM d, h:mm a').format(notification.timestamp.toLocal()),
+              style: _notificationTime,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Empty state widget when no notifications exist
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -267,39 +268,21 @@ class _NotificationListPageState extends State<NotificationListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.notifications_off_rounded,
-              size: 80.w,
-              color: secondaryTextColor.withOpacity(0.3),
-            )
+            Icon(Icons.notifications_off_rounded, size: 80.w, color: secondaryTextColor.withOpacity(0.3))
                 .animate()
                 .scale(duration: 600.ms, curve: Curves.elasticOut)
                 .fadeIn(duration: 300.ms),
             SizedBox(height: 24.h),
             Text(
               'No Notifications',
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 200.ms)
-                .slide(begin: const Offset(0, 0.1)),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700, color: textColor),
+            ).animate().fadeIn(delay: 200.ms).slide(begin: const Offset(0, 0.1)),
             SizedBox(height: 8.h),
             Text(
               'When new notifications arrive,\nthey will appear here',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: secondaryTextColor,
-                height: 1.5,
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 400.ms)
-                .slide(begin: const Offset(0, 0.1)),
+              style: TextStyle(fontSize: 14.sp, color: secondaryTextColor, height: 1.5),
+            ).animate().fadeIn(delay: 400.ms).slide(begin: const Offset(0, 0.1)),
           ],
         ),
       ),
